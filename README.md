@@ -7,6 +7,7 @@ A project for experimenting with automatically producing room geometry from OBJ 
 - Automatic room detection from OBJ files exported from IFC/Revit
 - Multi-floor building support
 - Configurable parameters for grid spacing, room height thresholds, and minimum room dimensions
+- Interactive 3D visualization of results
 - Outputs candidate points ready for flood fill polygon generation
 
 ## Setup
@@ -50,6 +51,9 @@ Options:
   --max-height FLOAT      Maximum room height in cm (default: 500.0)
   --min-room-size FLOAT   Minimum room dimension in cm (default: 100.0)
   --by-floor              Group results by floor level
+  --visualize             Open interactive 3D viewer
+  --marker-size FLOAT     Size of ceiling markers in cm (default: 20.0)
+  --opacity FLOAT         Building opacity for visualization (0-1, default: 0.3)
   --quiet                 Suppress progress output
 ```
 
@@ -67,6 +71,12 @@ python main.py --min-height 220 --max-height 400 sample_models/building.obj
 
 # Show results grouped by floor
 python main.py --by-floor sample_models/building.obj
+
+# Open interactive 3D visualization
+python main.py --visualize sample_models/building.obj
+
+# Visualization with custom settings
+python main.py --visualize --opacity 0.5 --marker-size 30 sample_models/building.obj
 ```
 
 ### Python API
@@ -74,8 +84,10 @@ python main.py --by-floor sample_models/building.obj
 ```python
 from room_detection import (
     detect_rooms,
+    detect_rooms_with_mesh,
     detect_rooms_by_floor,
     RoomDetectionConfig,
+    visualize_results,
 )
 
 # With default configuration
@@ -94,6 +106,10 @@ candidates = detect_rooms("sample_models/building.obj", config=config)
 floors = detect_rooms_by_floor("sample_models/building.obj")
 for floor_z, floor_candidates in floors.items():
     print(f"Floor at Z={floor_z}: {len(floor_candidates)} candidates")
+
+# With visualization
+candidates, mesh_data = detect_rooms_with_mesh("sample_models/building.obj")
+visualize_results(mesh_data, candidates, building_opacity=0.3)
 ```
 
 ## Algorithm Overview
@@ -124,7 +140,8 @@ The candidate points are ready for flood fill processing to generate room polygo
 │   ├── grid_sampler.py       # Grid point generation
 │   ├── ray_caster.py         # Vertical and horizontal ray casting
 │   ├── point_filter.py       # Height and room size filtering
-│   └── pipeline.py           # Main detection pipeline
+│   ├── pipeline.py           # Main detection pipeline
+│   └── visualizer.py         # 3D visualization utilities
 └── README.md
 ```
 

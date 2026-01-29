@@ -6,7 +6,7 @@ the entire room detection pipeline from OBJ loading through candidate point
 generation ready for flood fill.
 """
 
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 import time
 
 from .types import RoomDetectionConfig, CandidatePoint
@@ -114,6 +114,94 @@ def detect_rooms(
         print(f"{'='*60}\n")
     
     return candidates
+
+
+def detect_rooms_with_mesh(
+    obj_path: str,
+    config: Optional[RoomDetectionConfig] = None,
+    verbose: bool = True
+) -> Tuple[List[CandidatePoint], MeshData]:
+    """
+    Detect room candidate points and return mesh data for visualization.
+    
+    Same as detect_rooms() but also returns the loaded mesh data,
+    useful for visualization.
+    
+    Args:
+        obj_path: Path to the OBJ file
+        config: Room detection configuration
+        verbose: Print progress information
+        
+    Returns:
+        Tuple of (candidates, mesh_data)
+    """
+    if config is None:
+        config = RoomDetectionConfig()
+    
+    start_time = time.time()
+    
+    if verbose:
+        print(f"\n{'='*60}")
+        print(f"Room Detection Pipeline")
+        print(f"{'='*60}")
+        print(f"\nStep 1: Loading mesh...")
+    
+    mesh_data = load_building_mesh(obj_path)
+    
+    if verbose:
+        print(f"\nStep 2: Generating sample grid (spacing: {config.grid_spacing_cm}cm)...")
+    
+    sample_points = generate_sample_grid(mesh_data.mesh.bounds, config)
+    
+    if verbose:
+        print(f"\nStep 3: Casting vertical rays...")
+    
+    vertical_results = cast_vertical_rays(mesh_data, sample_points, config)
+    
+    if not vertical_results:
+        if verbose:
+            print("No interior points found!")
+        return [], mesh_data
+    
+    if verbose:
+        print(f"\nStep 4: Filtering by height ({config.min_room_height_cm}-{config.max_room_height_cm}cm)...")
+    
+    height_filtered = filter_by_height(vertical_results, config)
+    
+    if not height_filtered:
+        if verbose:
+            print("No points passed height filtering!")
+        return [], mesh_data
+    
+    if verbose:
+        print(f"\nStep 5: Validating with horizontal rays (min room: {config.min_room_dimension_cm}cm)...")
+    
+    horizontal_validated = cast_horizontal_rays(mesh_data, height_filtered, config)
+    
+    if not horizontal_validated:
+        if verbose:
+            print("No points passed horizontal validation!")
+        return [], mesh_data
+    
+    if verbose:
+        print(f"\nStep 6: Creating candidate points for flood fill...")
+    
+    candidates = create_candidate_points(horizontal_validated, mesh_data)
+    
+    elapsed = time.time() - start_time
+    
+    if verbose:
+        print(f"\n{'='*60}")
+        print(f"Pipeline complete in {elapsed:.2f}s")
+        print(f"Result: {len(candidates)} candidate points ready for flood fill")
+        
+        floors = group_by_floor(horizontal_validated)
+        print(f"\nFloor breakdown:")
+        for floor_z in sorted(floors.keys()):
+            print(f"  Floor at Z={floor_z:.1f}cm: {len(floors[floor_z])} points")
+        print(f"{'='*60}\n")
+    
+    return candidates, mesh_data
 
 
 def detect_rooms_by_floor(

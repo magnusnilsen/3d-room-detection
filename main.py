@@ -13,12 +13,16 @@ Options can be configured by modifying the RoomDetectionConfig parameters.
 import sys
 import argparse
 from pathlib import Path
+from typing import List, Optional
 
 from room_detection import (
     detect_rooms,
+    detect_rooms_with_mesh,
     detect_rooms_by_floor,
     RoomDetectionConfig,
     CandidatePoint,
+    MeshData,
+    visualize_results,
 )
 
 
@@ -32,6 +36,7 @@ Examples:
   python main.py sample_models/building.obj
   python main.py sample_models/
   python main.py --grid-spacing 50 sample_models/building.obj
+  python main.py --visualize sample_models/building.obj
         """
     )
     
@@ -76,6 +81,26 @@ Examples:
     )
     
     parser.add_argument(
+        "--visualize",
+        action="store_true",
+        help="Open interactive 3D viewer to visualize results"
+    )
+    
+    parser.add_argument(
+        "--marker-size",
+        type=float,
+        default=20.0,
+        help="Size of ceiling markers in cm (default: 20.0)"
+    )
+    
+    parser.add_argument(
+        "--opacity",
+        type=float,
+        default=0.3,
+        help="Building mesh opacity for visualization (0-1, default: 0.3)"
+    )
+    
+    parser.add_argument(
         "--quiet",
         action="store_true",
         help="Suppress progress output"
@@ -88,6 +113,9 @@ def process_obj_file(
     obj_path: Path,
     config: RoomDetectionConfig,
     by_floor: bool = False,
+    visualize: bool = False,
+    marker_size: float = 20.0,
+    opacity: float = 0.3,
     verbose: bool = True
 ) -> None:
     """Process a single OBJ file."""
@@ -95,7 +123,29 @@ def process_obj_file(
     print("-" * 60)
     
     try:
-        if by_floor:
+        if visualize:
+            # Use the version that returns mesh data for visualization
+            candidates, mesh_data = detect_rooms_with_mesh(
+                str(obj_path), config, verbose=verbose
+            )
+            
+            if not candidates:
+                print("No rooms detected.")
+                return
+            
+            print(f"\nDetected {len(candidates)} room candidate(s)")
+            
+            # Show visualization
+            visualize_results(
+                mesh_data=mesh_data,
+                candidates=candidates,
+                building_opacity=opacity,
+                marker_size_cm=marker_size,
+                show_points=True,
+                show_markers=True
+            )
+        
+        elif by_floor:
             floors = detect_rooms_by_floor(str(obj_path), config, verbose=verbose)
             
             if not floors:
@@ -179,7 +229,15 @@ def main():
     
     # Process each file
     for obj_file in obj_files:
-        process_obj_file(obj_file, config, by_floor=args.by_floor, verbose=verbose)
+        process_obj_file(
+            obj_file, 
+            config, 
+            by_floor=args.by_floor,
+            visualize=args.visualize,
+            marker_size=args.marker_size,
+            opacity=args.opacity,
+            verbose=verbose
+        )
 
 
 if __name__ == "__main__":

@@ -30,8 +30,14 @@ from .point_filter import (
 )
 from .pipeline import (
     detect_rooms,
+    detect_rooms_with_mesh,
     detect_rooms_by_floor,
     detect_rooms_simple,
+)
+from .visualizer import (
+    visualize_results,
+    create_point_cloud,
+    create_ceiling_markers,
 )
 
 __all__ = [
@@ -58,6 +64,11 @@ __all__ = [
     'filter_duplicate_candidates',
     # Pipeline
     'detect_rooms',
+    'detect_rooms_with_mesh',
     'detect_rooms_by_floor',
     'detect_rooms_simple',
+    # Visualization
+    'visualize_results',
+    'create_point_cloud',
+    'create_ceiling_markers',
 ]
