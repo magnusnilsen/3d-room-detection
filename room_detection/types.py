@@ -71,7 +71,7 @@ class RoomDetectionConfig:
     """Configuration parameters for room detection algorithm."""
     
     # Grid sampling
-    grid_spacing_cm: float = 25.0
+    grid_spacing_cm: float = 100.0  # 1 meter default spacing
     
     # Multi-floor sampling
     floor_height_cm: float = 300.0  # Expected floor-to-floor height

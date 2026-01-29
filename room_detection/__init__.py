@@ -39,6 +39,12 @@ from .visualizer import (
     create_point_cloud,
     create_ceiling_markers,
 )
+from .flood_fill import (
+    Room,
+    extract_rooms,
+    flood_fill_for_candidate,
+    group_candidates_by_level,
+)
 
 __all__ = [
     # Types
@@ -71,4 +77,9 @@ __all__ = [
     'visualize_results',
     'create_point_cloud',
     'create_ceiling_markers',
+    # Flood fill / Room extraction
+    'Room',
+    'extract_rooms',
+    'flood_fill_for_candidate',
+    'group_candidates_by_level',
 ]

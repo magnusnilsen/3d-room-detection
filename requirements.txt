@@ -3,3 +3,4 @@ trimesh>=3.20.0
 rtree>=1.0.0
 scipy>=1.10.0
 open3d>=0.17.0
+shapely>=2.0.0

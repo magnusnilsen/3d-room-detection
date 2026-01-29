@@ -7,8 +7,9 @@ A project for experimenting with automatically producing room geometry from OBJ 
 - Automatic room detection from OBJ files exported from IFC/Revit
 - Multi-floor building support
 - Configurable parameters for grid spacing, room height thresholds, and minimum room dimensions
-- Interactive 3D visualization of results
-- Outputs candidate points ready for flood fill polygon generation
+- Flood fill algorithm to extract room polygons with areas
+- Interactive 3D visualization of results with extruded room geometry
+- Outputs room polygons as extruded shapes with floor/ceiling coordinates
 
 ## Setup
 
@@ -46,14 +47,16 @@ python main.py sample_models/
 python main.py [OPTIONS] <input_path>
 
 Options:
-  --grid-spacing FLOAT    Grid sampling spacing in cm (default: 25.0)
+  --grid-spacing FLOAT    Grid sampling spacing in cm (default: 100.0)
   --min-height FLOAT      Minimum room height in cm (default: 200.0)
   --max-height FLOAT      Maximum room height in cm (default: 500.0)
   --min-room-size FLOAT   Minimum room dimension in cm (default: 100.0)
   --by-floor              Group results by floor level
   --visualize             Open interactive 3D viewer
+  --extract-rooms         Run flood fill to extract room polygons
   --marker-size FLOAT     Size of ceiling markers in cm (default: 20.0)
   --opacity FLOAT         Building opacity for visualization (0-1, default: 0.3)
+  --solid                 Show building as solid mesh (default: wireframe)
   --quiet                 Suppress progress output
 ```
 
@@ -77,6 +80,12 @@ python main.py --visualize sample_models/building.obj
 
 # Visualization with custom settings
 python main.py --visualize --opacity 0.5 --marker-size 30 sample_models/building.obj
+
+# Extract room polygons with flood fill
+python main.py --extract-rooms sample_models/building.obj
+
+# Extract rooms and visualize the results
+python main.py --extract-rooms --visualize sample_models/building.obj
 ```
 
 ### Python API
@@ -86,6 +95,7 @@ from room_detection import (
     detect_rooms,
     detect_rooms_with_mesh,
     detect_rooms_by_floor,
+    extract_rooms,
     RoomDetectionConfig,
     visualize_results,
 )
@@ -107,8 +117,16 @@ floors = detect_rooms_by_floor("sample_models/building.obj")
 for floor_z, floor_candidates in floors.items():
     print(f"Floor at Z={floor_z}: {len(floor_candidates)} candidates")
 
-# With visualization
+# Extract room polygons with flood fill
 candidates, mesh_data = detect_rooms_with_mesh("sample_models/building.obj")
+rooms = extract_rooms(candidates, mesh_data)
+for room in rooms:
+    print(f"Room {room.id}: {room.area_m2:.2f} m², height {room.height:.0f} cm")
+    # Access room geometry
+    print(f"  Floor polygon: {len(room.polygon_3d)} vertices")
+    print(f"  Floor Z: {room.floor_z}, Ceiling Z: {room.ceiling_z}")
+
+# With visualization
 visualize_results(mesh_data, candidates, building_opacity=0.3)
 ```
 
@@ -149,7 +167,7 @@ The candidate points are ready for flood fill processing to generate room polygo
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `grid_spacing_cm` | 25.0 | Distance between sample points |
+| `grid_spacing_cm` | 100.0 | Distance between sample points (1m default) |
 | `min_room_height_cm` | 200.0 | Minimum valid room height |
 | `max_room_height_cm` | 500.0 | Maximum valid room height |
 | `min_room_dimension_cm` | 100.0 | Minimum room width/depth |
