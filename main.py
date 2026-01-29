@@ -101,6 +101,12 @@ Examples:
     )
     
     parser.add_argument(
+        "--solid",
+        action="store_true",
+        help="Show building as solid mesh instead of wireframe (default: wireframe)"
+    )
+    
+    parser.add_argument(
         "--quiet",
         action="store_true",
         help="Suppress progress output"
@@ -116,6 +122,7 @@ def process_obj_file(
     visualize: bool = False,
     marker_size: float = 20.0,
     opacity: float = 0.3,
+    wireframe: bool = True,
     verbose: bool = True
 ) -> None:
     """Process a single OBJ file."""
@@ -142,7 +149,8 @@ def process_obj_file(
                 building_opacity=opacity,
                 marker_size_cm=marker_size,
                 show_points=True,
-                show_markers=True
+                show_markers=True,
+                wireframe=wireframe
             )
         
         elif by_floor:
@@ -236,6 +244,7 @@ def main():
             visualize=args.visualize,
             marker_size=args.marker_size,
             opacity=args.opacity,
+            wireframe=not args.solid,
             verbose=verbose
         )
 
